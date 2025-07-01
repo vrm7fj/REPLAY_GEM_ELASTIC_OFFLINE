@@ -279,18 +279,10 @@ void Init_Grid_Bins(const std::map<Int_t, FT_layer_struct>& params)
   fGridXmax_layer.clear();
   fGridYmax_layer.clear();
   
-  std::cout << "------------------------- Initialize Grid Bins ----------------------------" << std::endl;  
-
   for (const auto& entry : params)
     {
       const Int_t& layer_key = entry.first;
       const FT_layer_struct& layer_para = entry.second;
-
-       //Initiate grid active area for this layer
-       double xgmin_all = 1.e12, ygmin_all = 1.e12, xgmax_all = -1.e12, ygmax_all = -1.e12;
-       double zsum = 0.0;
- 
-      std::cout << "Layer " << layer_key << ":\n";
 
       for (size_t imod = 0; imod < layer_para.module_id.size(); imod++)
 	{
@@ -305,8 +297,8 @@ void Init_Grid_Bins(const std::map<Int_t, FT_layer_struct>& params)
           //Create the Rotation Matrix
           TRotation R;
           R.RotateX(deg2rad * layer_para.module_angle[imod].X());
-	  R.RotateY(deg2rad * layer_para.module_angle[imod].Y());
-	  R.RotateZ(deg2rad * layer_para.module_angle[imod].Z());
+	  R.RotateX(deg2rad * layer_para.module_angle[imod].Y());
+	  R.RotateX(deg2rad * layer_para.module_angle[imod].Z());
 
 	  // Define unit vectors in local frame
 	  TVector3 X_unit_local(1, 0, 0);
@@ -318,80 +310,22 @@ void Init_Grid_Bins(const std::map<Int_t, FT_layer_struct>& params)
 	  TVector3 Y_unit_rotated = R * Y_unit_local;
 	  TVector3 Z_unit_rotated = R * Z_unit_local;
 
-	  std::cout << "    Module " << imod << " (" << layer_para.module_id[imod] << ") " << "\n";
-	  std::cout << "       X_unit_rotated = " << X_unit_rotated.X() << " ," << X_unit_rotated.Y() << " ," << X_unit_rotated.Z() << "\n"
-	  << "       Y_unit_rotated = " << Y_unit_rotated.X() << " ," << Y_unit_rotated.Y() << " ," << Y_unit_rotated.Z() << "\n"
-	  << "       Z_unit_rotated = " << Z_unit_rotated.X() << " ," << Z_unit_rotated.Y() << " ," << Z_unit_rotated.Z() << std::endl;
+	  std::cout << "Layer " << layer_key << ":\n";
+	  std::cout << "    Module " << imod << ":\n";
+	  std::cout << "    X_unit_rotated = " << X_unit_rotated.X() << " | Y_unit_rotated = " << Y_unit_rotated.          R.RotateX(layer_para.module_angle[imod].X()); << " | Z_unit_rotated = " << Z_unit_rotated << std::endl;
+
+
     
-          // Calculate half width of modules along X and Y using DB
-	  Double_t X_mod_half_width = layer_para.module_size[imod].X()/ 2.0;
-	  Double_t Y_mod_half_width = layer_para.module_size[imod].Y()/ 2.0;
+          //std::cout << "module_key: " << module_key << std::endl;
 
-	  std::cout << "\n";
-	  std::cout << "       X_mod_half_width = " << X_mod_half_width << "\n"
-	            << "       Y_mod_half_width = " << Y_mod_half_width << std::endl;
+      
 
-	  // To compute average Z coordinate of this layer
-	  zsum += layer_para.module_pos[imod].Z();
+          //Initiate grid active area for this layer
+          double xgmin_all = 1.e12, ygmin_all = 1.e12, xgmax_all = -1.e12, ygmax_all = -1.e12;
 
-	  // Calculate the positions of the four corners of the active area of each module
-	  TVector3 Corner1 = layer_para.module_pos[imod] - X_mod_half_width * X_unit_rotated - Y_mod_half_width * Y_unit_rotated;
-	  TVector3 Corner2 = layer_para.module_pos[imod] + X_mod_half_width * X_unit_rotated - Y_mod_half_width * Y_unit_rotated;
-	  TVector3 Corner3 = layer_para.module_pos[imod] - X_mod_half_width * X_unit_rotated + Y_mod_half_width * Y_unit_rotated;
-	  TVector3 Corner4 = layer_para.module_pos[imod] + X_mod_half_width * X_unit_rotated + Y_mod_half_width * Y_unit_rotated;
-
-	  //Check if corners 1 and 3 defines the minimum X of the layer. Check all four corners to make sure
-      	  xgmin_all = Corner1.X() < xgmin_all ? Corner1.X() : xgmin_all;
-	  xgmin_all = Corner2.X() < xgmin_all ? Corner2.X() : xgmin_all;
-	  xgmin_all = Corner3.X() < xgmin_all ? Corner3.X() : xgmin_all;
-	  xgmin_all = Corner4.X() < xgmin_all ? Corner4.X() : xgmin_all;
-
-	  //Check if corners 2 and 4 defines the maximum Y of the layer. Check all four corners to make sure
-	  xgmax_all = Corner1.X() > xgmax_all ? Corner1.X() : xgmax_all;
-	  xgmax_all = Corner2.X() > xgmax_all ? Corner2.X() : xgmax_all;
-	  xgmax_all = Corner3.X() > xgmax_all ? Corner3.X() : xgmax_all;
-	  xgmax_all = Corner4.X() > xgmax_all ? Corner4.X() : xgmax_all;
-
-	  //Check if corners 1 and 2 defines the minimum Y of the layer. Check all four corners to make sure
-	  ygmin_all = Corner1.Y() < ygmin_all ? Corner1.Y() : ygmin_all;
-	  ygmin_all = Corner2.Y() < ygmin_all ? Corner2.Y() : ygmin_all;
-	  ygmin_all = Corner3.Y() < ygmin_all ? Corner3.Y() : ygmin_all;
-	  ygmin_all = Corner4.Y() < ygmin_all ? Corner4.Y() : ygmin_all;
-
-          //Check if corners 3 and 4 defines the maximum Y if the layer. Check all four corners to make sure.
-	  ygmax_all = Corner1.Y() > ygmax_all ? Corner1.Y() : ygmax_all;
-	  ygmax_all = Corner2.Y() > ygmax_all ? Corner2.Y() : ygmax_all;
-	  ygmax_all = Corner3.Y() > ygmax_all ? Corner3.Y() : ygmax_all;
-	  ygmax_all = Corner4.Y() > ygmax_all ? Corner4.Y() : ygmax_all;
-
-	  //Why don't we use min and max functions? 
-
-	  fXmin_layer[layer_key] = xgmin_all;
-	  fXmax_layer[layer_key] = xgmax_all;
-	  fYmin_layer[layer_key] = ygmin_all;
-	  fYmax_layer[layer_key] = ygmax_all;
+          double zsum = 0.0;
 	}
-
-      std::cout << "\n";
-      std::cout << "       Layer " << layer_key << " min X = " << fXmin_layer[layer_key] << "\n"
-	        << "       Layer " << layer_key << " max X = " << fXmax_layer[layer_key] << "\n"
-	        << "       Layer " << layer_key << " min Y = " << fYmin_layer[layer_key] << "\n"
-	        << "       Layer " << layer_key << " max Y = " << fYmax_layer[layer_key] << std::endl;
-
-      fZavgLayer[layer_key] = zsum / layer_para.module_id.size();
-
-      std::cout << "\n";
-      std::cout << "       Layer " << layer_key << " average Z position = " << fZavgLayer[layer_key] << std::endl;
-
-      if( layer_key == 0 || fZavgLayer[layer_key] > fZmaxLayer ) fZmaxLayer = fZavgLayer[layer_key];
-      if( layer_key == 0 || fZavgLayer[layer_key] < fZminLayer ) fZminLayer = fZavgLayer[layer_key];
-
     }
-
-      std::cout << "\n";
-      std::cout << "       Tracker Z min = " << fZminLayer << std::endl;
-      std::cout << "       Tracker Z max = " << fZmaxLayer << std::endl;
   
 }
-
 #endif
