@@ -257,7 +257,7 @@ std::map<int, double> fZavgLayer; // Average z position of the layer. We'll need
 double fZminLayer, fZmaxLayer;
 // "Grid bins" for fast track-finding algorithm: define limits of layer active area
 std::map<int, double> fXmin_layer, fXmax_layer, fYmin_layer, fYmax_layer;
-double fGridBinWidthX, fGridBinWidthY; // We use the grid bin size = 10mm
+//double fGridBinWidthX, fGridBinWidthY; // Will define these in hardcode.h
 double fGridEdgeToleranceX, fGridEdgeToleranceY;
 std::map<int, int> fGridNbinsX_layer, fGridNbinsY_layer;
 std::map<int, double> fGridXmin_layer, fGridYmin_layer, fGridXmax_layer, fGridYmax_layer;
@@ -386,12 +386,34 @@ void Init_Grid_Bins(const std::map<Int_t, FT_layer_struct>& params)
       if( layer_key == 0 || fZavgLayer[layer_key] > fZmaxLayer ) fZmaxLayer = fZavgLayer[layer_key];
       if( layer_key == 0 || fZavgLayer[layer_key] < fZminLayer ) fZminLayer = fZavgLayer[layer_key];
 
+      fGridXmin_layer[layer_key] = fXmin_layer[layer_key] - 0.5 * fGridBinWidthX; // Adding some tolerance to the edges
+      Int_t nbinsx = 0;
+      while( fGridXmin_layer[layer_key] + nbinsx * fGridBinWidthX < fXmax_layer[layer_key] + 0.5 * fGridBinWidthX )
+	{
+	  nbinsx++;
+	}
+
+      fGridXmax_layer[layer_key] = fGridXmin_layer[layer_key] + nbinsx * fGridBinWidthX;
+      fGridNbinsX_layer[layer_key] = nbinsx;
+
+      fGridYmin_layer[layer_key] = fYmin_layer[layer_key] - 0.5 * fGridBinWidthY; // Adding some tolerance to the edges
+      Int_t nbinsy = 0;
+      while( fGridYmin_layer[layer_key] + nbinsy * fGridBinWidthY < fYmax_layer[layer_key] + 0.5 * fGridBinWidthY )
+	{
+	  nbinsy++;
+	}
+
+      fGridYmax_layer[layer_key] = fGridYmin_layer[layer_key] + nbinsy * fGridBinWidthY;
+      fGridNbinsY_layer[layer_key] = nbinsy;
+
+      std::cout << "\n";
+      std::cout << "       Layer " << layer_key << " nbinsx = " << nbinsx << " and nbinsy = " << nbinsy << std::endl;
     }
 
       std::cout << "\n";
       std::cout << "       Tracker Z min = " << fZminLayer << std::endl;
       std::cout << "       Tracker Z max = " << fZmaxLayer << std::endl;
   
-}
+} 
 
 #endif
