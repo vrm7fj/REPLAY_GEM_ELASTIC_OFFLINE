@@ -60,6 +60,7 @@ int replay_gem_elastic(const char* configfilename)
         Init_Grid_Bins(FT_layer_map);
 	Init_hit_list(T);
 	project_track_to_layer(T);
+	//hitpostest(T);
 	//Is_layer_composite();
 	//PrintT(T);
 	//Init_FT_module_2D_grid(Module, xglobal, yglobal, zglobal);

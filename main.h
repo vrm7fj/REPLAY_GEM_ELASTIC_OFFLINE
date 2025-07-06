@@ -468,6 +468,89 @@ void Init_Grid_Bins(const std::map<Int_t, FT_layer_struct>& params)
 }
 
 
+// // structure to hold hit informations
+// struct hit_list_struct {
+//   std::vector<Int_t> hit_layer;
+//   std::vector<Int_t> hit_status;
+//   std::vector<TVector2> hit_position;
+// };
+
+// // map to hold hit information corresponding to each hit index
+// std::map<Int_t, hit_list_struct> hit_list;
+
+// // Temp vectors for filling the hit_list map
+// std::vector<Int_t> layers_with_hits;
+// std::vector<TVector2> hit_pos_on_layer;
+
+// void Init_hit_list( TTree* T){
+
+//   InitTree(T);
+
+//   //std::cout << FT_NLAYER << std::endl;
+  
+//   for (Int_t T_index = 0; T_index < nentries; T_index++) {
+    
+//     T->GetEntry(T_index);
+
+//     hit_list_struct current_hit;
+
+//     Int_t n_hits_on_track = FT_TRACK_NHITS[0]; // Number of hits we have on this track
+
+//     layers_with_hits.clear();
+//     hit_pos_on_layer.clear();
+
+//     for (Int_t hit_index = 0; hit_index < n_hits_on_track; hit_index++){
+//       layers_with_hits.push_back(FT_HIT_LAYER[hit_index]); // These layers have hits
+
+//             Double_t hit_x_pos = FT_HIT_XLOCAL[hit_index];
+//             Double_t hit_y_pos = FT_HIT_YLOCAL[hit_index];
+
+// 	    hit_pos_on_layer.push_back(TVector2(hit_x_pos, hit_y_pos));
+//     }
+
+//     // //Debug Print
+//     // for ( Int_t i = 0 ; i < hit_pos_on_layer.size(); i++) 
+//     // }
+
+//     // Fill the hit_list map now
+//     // Loop over all the layers and update all layers with hits and mark the layers without hits
+//     //std::cout << " How about here? " << std::endl;
+//     for ( Int_t ilayer = 0; ilayer < FT_NLAYER; ilayer++) {
+      
+//       //Check if this layer exists in layers_with_hits
+//       auto found_layer = std::find(layers_with_hits.begin(), layers_with_hits.end(), ilayer);
+
+//       // std::cout << *found_layer << std::endl;
+//       // Found hit on this layer
+//       if ( found_layer != layers_with_hits.end() ) {
+// 	Int_t hit_index = std::distance(layers_with_hits.begin(), found_layer); // Get the corresponding index
+// 	current_hit.hit_layer.push_back(ilayer);
+// 	current_hit.hit_status.push_back(1);
+// 	current_hit.hit_position.push_back(hit_pos_on_layer[hit_index]); //index is what needed here.  
+//         } else {
+// 	current_hit.hit_layer.push_back(ilayer);
+// 	current_hit.hit_status.push_back(-1);
+// 	current_hit.hit_position.push_back(TVector2(-1,-1));
+// 	}
+     
+//     }
+
+//     // Update the map
+//     hit_list[T_index] = current_hit;      
+//   }
+//   // // Print the map for debug purposes
+//   // for (const auto& [hit_idx, hit_data]: hit_list){
+//   //   std::cout << "  Track index: " << hit_idx << "\n";
+//   //   for ( Int_t idx = 0 ; idx < FT_NLAYER; idx++) {
+//   //     std::cout << "    Hit layer: " << hit_data.hit_layer[idx]<< std::setw(10) << " | "  
+//   // 		<< "    Hit status: " << std::setw(5) << hit_data.hit_status[idx] << std::setw(10) << " | " 
+//   //     << "    Hit positions: (" << hit_data.hit_position[idx].X() << ", " << hit_data.hit_position[idx].Y() << ") " << std::endl;  
+//   //   }
+//   // }
+// }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // structure to hold hit informations
 struct hit_list_struct {
   std::vector<Int_t> hit_layer;
@@ -480,6 +563,7 @@ std::map<Int_t, hit_list_struct> hit_list;
 
 // Temp vectors for filling the hit_list map
 std::vector<Int_t> layers_with_hits;
+std::vector<Int_t> modules_with_hits;
 std::vector<TVector2> hit_pos_on_layer;
 
 void Init_hit_list( TTree* T){
@@ -497,16 +581,56 @@ void Init_hit_list( TTree* T){
     Int_t n_hits_on_track = FT_TRACK_NHITS[0]; // Number of hits we have on this track
 
     layers_with_hits.clear();
+    modules_with_hits.clear();
     hit_pos_on_layer.clear();
 
     for (Int_t hit_index = 0; hit_index < n_hits_on_track; hit_index++){
-      layers_with_hits.push_back(FT_HIT_LAYER[hit_index]); // These layers have hits
 
-            Double_t hit_x_pos = FT_HIT_XLOCAL[hit_index];
+      Int_t hit_layer = FT_HIT_LAYER[hit_index];
+      Int_t hit_module = FT_HIT_MODULE[hit_index];
+      
+      layers_with_hits.push_back(hit_layer); // These layers have hits
+      modules_with_hits.push_back(hit_module);
+
+      auto layer_it = FT_layer_map.find(hit_layer);
+
+      if ( layer_it == FT_layer_map.end()) {
+	std::cerr << " Layer " << hit_layer << " not found in FT_layer_map [Error in Init_hit_list] " << std::endl;
+	continue;
+      }
+      
+      const auto& layer_para = layer_it->second;
+      const auto& ids = layer_para.module_id;
+
+	// Only search if this is a composite module
+	if ( ids.size() > 1 ) {
+
+          auto it = std::find(ids.begin(), ids.end(), hit_module);
+	  if (it != ids.end() ) {
+
+	    size_t distance_index = std::distance(ids.begin(), it);
+
+	    // We have to shift hits by module positions if this a composite module
+	    Double_t x_shift = layer_para.module_pos[distance_index].X();
+	    Double_t y_shift = layer_para.module_pos[distance_index].Y();
+	      
+            Double_t hit_x_pos = FT_HIT_XLOCAL[hit_index] + x_shift;
+            Double_t hit_y_pos = FT_HIT_YLOCAL[hit_index] + y_shift;
+
+	    hit_pos_on_layer.push_back(TVector2(hit_x_pos, hit_y_pos));
+	  } else {
+	    std::cout << " Module not found: Init_hit_list " << std::endl;
+	  }
+	} else {
+
+      	    Double_t hit_x_pos = FT_HIT_XLOCAL[hit_index];
             Double_t hit_y_pos = FT_HIT_YLOCAL[hit_index];
 
 	    hit_pos_on_layer.push_back(TVector2(hit_x_pos, hit_y_pos));
-    }
+	}
+
+      }  
+  
 
     // //Debug Print
     // for ( Int_t i = 0 ; i < hit_pos_on_layer.size(); i++) 
@@ -547,8 +671,66 @@ void Init_hit_list( TTree* T){
   //     << "    Hit positions: (" << hit_data.hit_position[idx].X() << ", " << hit_data.hit_position[idx].Y() << ") " << std::endl;  
   //   }
   // }
-
 }
+
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// std::vector<Int_t> mod_on_track;
+
+// void hitpostest(TTree* T) {
+
+//     InitTree(T);
+
+//     for ( Int_t T_index = 0; T_index < nentries; T_index++) {
+
+//       T->GetEntry(T_index);
+
+//       mod_on_track.clear();
+
+//       Int_t n_hits_on_track = FT_TRACK_NHITS[0]; // Number of hits we have on this track
+
+//       for ( Int_t hit_index = 0; hit_index < n_hits_on_track; hit_index++ ) {
+
+// 	mod_on_track.push_back(FT_HIT_MODULE[hit_index]);
+
+// 	//Lets check if this hit is on a composite module
+//         for (const auto& [layer_key, layer_para] : FT_layer_map ) {
+// 	  const std::vector<Int_t>& ids = layer_para.module_id;
+
+// 	  // Only search if this is a composite module
+// 	  if ( ids.size() > 1 ) {
+	    
+// 	    auto it = std::find(ids.begin(), ids.end(), FT_HIT_MODULE[hit_index]);
+// 	    if (it != ids.end() ) {
+// 	      size_t distance_index = std::distance(ids.begin(), it);
+
+// 	      std::cout << layer_para.module_id[distance_index] << std::endl;
+
+	      
+//             }
+// 	  }
+	  
+// 	}
+        	
+//       }
+
+//       std::cout << "\n";
+
+//       for (const auto& imod : mod_on_track ) {
+//         printf ( "mod on track: %d \n", imod );
+//       }
+//     }
+
+//     // std::cout << "\n";
+
+//     // for (const auto& imod : mod_on_track ) {
+//     //     printf ( "mod on track: %d \n", imod );
+//     // }
+// }
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 
 
 // Structure to hold track data
