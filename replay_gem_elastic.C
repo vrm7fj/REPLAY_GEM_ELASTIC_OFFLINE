@@ -9,7 +9,7 @@
 
 #include "read_config.h"
 #include "hardcode.h"
-#include "elastic_engine.h"
+#include "main.h"
 
 //std::map<TString, module_para_struct> FT_module_para;
 //std::map<TString, module_para_struct> FT_layer_map;
@@ -58,6 +58,10 @@ int replay_gem_elastic(const char* configfilename)
 	Init_FT_module_geometry(ft_db_dir, ft_db_filename);
 	Init_layer_map(FT_module_para);
         Init_Grid_Bins(FT_layer_map);
+	Init_hit_list(T);
+	project_track_to_layer(T);
+	//Is_layer_composite();
+	//PrintT(T);
 	//Init_FT_module_2D_grid(Module, xglobal, yglobal, zglobal);
 
 	
