@@ -941,6 +941,7 @@ void Draw_Histograms() {
 
   //gStyle->SetOpsStat(0);
   TCanvas* c = new TCanvas("c", "canvas_for_plots", 900, 900);
+  TCanvas* c2 = new TCanvas("c2", "canvas2_for_plots", 900, 900);
 
   c->Print(outpdfname + "[");
 
@@ -1001,13 +1002,13 @@ void Draw_Histograms() {
     c->Divide(2,2);
     
     c->cd(1);
-    // ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->SetLineColor(kRed);
+    ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->SetLineColor(kRed);
 
     //    ( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
     ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->Draw("HIST");
 
     c->cd(2);
-    //( (TH1D*)(*hefficiency_y_layer)[ilayer] )->SetLineColor(kRed);
+    ( (TH1D*)(*hefficiency_y_layer)[ilayer] )->SetLineColor(kRed);
 
     //    ( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
     ( (TH1D*)(*hefficiency_y_layer)[ilayer] )->Draw("HIST");
@@ -1019,6 +1020,9 @@ void Draw_Histograms() {
     //gStyle->SetPalette(kDarkBodyRadiator);
     ( (TH2D*)(*hefficiency_xy_layer)[ilayer] )->Draw("COLZ");
 
+    c->Modified();
+    c->Update();
+    c->Draw();
     c->Print(outpdfname);
   }
 
