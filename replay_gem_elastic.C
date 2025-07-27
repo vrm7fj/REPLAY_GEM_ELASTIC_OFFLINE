@@ -62,8 +62,8 @@ int replay_gem_elastic(const char* configfilename)
 	project_track_to_layer(T);
         Init_Histograms();
 	Fill_Histograms();
-	Draw_Histograms();
 	CalcEfficiency();
+	Draw_Histograms();
 	//hitpostest(T);
 	//Is_layer_composite();
 	//PrintT(T);

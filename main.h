@@ -875,15 +875,15 @@ void Init_Histograms() {
 
       new( (*hdidhit_x_layer)[ilayer] ) TH1D( Form( "hdidhit_x_layer%d", ilayer ), "x of hits on good tracks (m); x(m)", nbinsx1D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );
       new( (*hdidhit_y_layer)[ilayer] ) TH1D( Form( "hdidhit_y_layer%d", ilayer ), "y of hits on good tracks (m); y(m)", nbinsy1D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );
-      new( (*hdidhit_xy_layer)[ilayer] ) TH2D( Form( "hdidhit_xy_layer%d", ilayer ), "xy of hits on good tracks (m); y(m); x(m)", nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01, nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );
+      new( (*hdidhit_xy_layer)[ilayer] ) TH2D( Form( "hdidhit_xy_layer%d", ilayer ), "xy of hits on good tracks (m); y(m); x(m)", nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01, nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );
 
       new( (*hshouldhit_x_layer)[ilayer] ) TH1D( Form( "hshouldhit_x_layer%d", ilayer ), "x of track crossing layer; x(m)", nbinsx1D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );
       new( (*hshouldhit_y_layer)[ilayer] ) TH1D( Form( "hshouldhit_y_layer%d", ilayer ), "y of track crossing layer; y(m)", nbinsy1D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );
-      new( (*hshouldhit_xy_layer)[ilayer] ) TH2D( Form( "hshouldhit_xy_layer%d", ilayer ), "x vs y of track crossing (m); y(m); x(m)", nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01, nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );     
+      new( (*hshouldhit_xy_layer)[ilayer] ) TH2D( Form( "hshouldhit_xy_layer%d", ilayer ), "x vs y of track crossing (m); y(m); x(m)", nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01, nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );        
 
       new( (*hefficiency_x_layer)[ilayer] ) TH1D( Form( "hefficiency_x_layer%d", ilayer ), "track-based efficiency vs x, averaged over y; x(m); efficiency", nbinsx1D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );
       new( (*hefficiency_y_layer)[ilayer] ) TH1D( Form( "hefficiency_y_layer%d", ilayer ), "track-based efficiency vs y, averaged over x; y(m); efficiency", nbinsy1D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );
-      new( (*hefficiency_xy_layer)[ilayer] ) TH2D( Form( "hefficiency_xy_layer%d", ilayer ), "track-based efficiency vs x, y; y(m); x(m)", nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01, nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01 );     
+      new( (*hefficiency_xy_layer)[ilayer] ) TH2D( Form( "hefficiency_xy_layer%d", ilayer ), "track-based efficiency vs x, y; y(m); x(m)", nbinsy2D, fYmin_layer[ilayer]-0.01, fYmax_layer[ilayer]+0.01, nbinsx2D, fXmin_layer[ilayer]-0.01, fXmax_layer[ilayer]+0.01 );     
 
    }
 }
@@ -909,6 +909,8 @@ void Fill_Histograms() {
       // switched X and Y, so that histograms look more natural
       ( (TH2D*) (*hshouldhit_xy_layer)[ilayer] )->Fill( track_data.track_pos_on_layer[ilayer].Y(), track_data.track_pos_on_layer[ilayer].X() );
 
+      //std::cout << "Filled xy values are: " << track_data.track_pos_on_layer[ilayer].Y() << ", " << track_data.track_pos_on_layer[ilayer].X() << std::endl;
+
       // Check hit status and fill the didhit histograms
       if ( hit_data.hit_status[ilayer] != 666 ) {
 
@@ -922,14 +924,25 @@ void Fill_Histograms() {
 }
 
 //Calculate Efficiencies
+std::vector<Double_t> layer_elastic_efficiency;
 
 void CalcEfficiency() {
 
   for (Int_t ilayer = 0; ilayer < FT_NLAYER; ilayer++) {
+    ( (TH1D*) (*hefficiency_x_layer)[ilayer] )->Sumw2();
+    ( (TH1D*) (*hefficiency_x_layer)[ilayer] )->Divide( ( (TH1D*) (*hdidhit_x_layer)[ilayer] ), ( (TH1D*) (*hshouldhit_x_layer)[ilayer] ), 1.0, 1.0, "B" );
+    ( (TH1D*) (*hefficiency_y_layer)[ilayer] )->Sumw2();
+    ( (TH1D*) (*hefficiency_y_layer)[ilayer] )->Divide( ( (TH1D*) (*hdidhit_y_layer)[ilayer] ), ( (TH1D*) (*hshouldhit_y_layer)[ilayer] ), 1.0, 1.0, "B" );
+    ( (TH1D*) (*hefficiency_xy_layer)[ilayer] )->Sumw2();
+    ( (TH2D*) (*hefficiency_xy_layer)[ilayer] )->Divide( ( (TH2D*) (*hdidhit_xy_layer)[ilayer] ), ( (TH2D*) (*hshouldhit_xy_layer)[ilayer] ), 1.0, 1.0, "B" );
 
-    ( (TH1D*) (*hefficiency_x_layer)[ilayer] )->Divide( ( (TH1D*) (*hdidhit_x_layer)[ilayer] ), ( (TH1D*) (*hshouldhit_x_layer)[ilayer] ) );
-    ( (TH1D*) (*hefficiency_y_layer)[ilayer] )->Divide( ( (TH1D*) (*hdidhit_y_layer)[ilayer] ), ( (TH1D*) (*hshouldhit_y_layer)[ilayer] ) );
-    ( (TH2D*) (*hefficiency_xy_layer)[ilayer] )->Divide( ( (TH2D*) (*hdidhit_xy_layer)[ilayer] ), ( (TH2D*) (*hshouldhit_xy_layer)[ilayer] ) );
+    // Efficiency = didhit/shouldhit
+
+    Double_t elastic_efficiency = (( (TH1D*) (*hdidhit_xy_layer)[ilayer] )->GetEntries() / ( (TH1D*) (*hshouldhit_xy_layer)[ilayer] )->GetEntries()) * 100;
+
+    layer_elastic_efficiency.push_back(elastic_efficiency);
+
+    std::cout << " Layer " << ilayer << " efficiency = " << elastic_efficiency << std::endl;
   }
 }
 
@@ -946,7 +959,43 @@ void Draw_Histograms() {
 
   gStyle->SetPalette(kDarkBodyRadiator);
 
+  Int_t one_time_hist = 1;
+
   for (Int_t ilayer = 0; ilayer < nlayer; ilayer++) {
+
+    // Page with all shouldhit XY histograms
+    if (one_time_hist != 0) {
+      c->Clear();
+      int nCols = 4;
+      int nRows = (nlayer + nCols - 1) / nCols;  // Round up
+      c->Divide(nCols, nRows);
+
+      for (Int_t ilayer = 0; ilayer < nlayer; ilayer++) {
+        c->cd(ilayer + 1);
+        ((TH2D*)(*hshouldhit_xy_layer)[ilayer])->GetXaxis()->SetRangeUser(-0.25, 0.25);
+        ((TH2D*)(*hshouldhit_xy_layer)[ilayer])->GetYaxis()->SetRangeUser(-0.85, 0.85);
+        ((TH2D*)(*hshouldhit_xy_layer)[ilayer])->SetTitle(Form("Layer %d: shouldhit", ilayer));
+        ((TH2D*)(*hshouldhit_xy_layer)[ilayer])->Draw("COLZ");
+      }
+      c->Print(outpdfname);
+
+      c->Clear();
+      c->Divide(nCols, nRows);
+
+      for (Int_t ilayer = 0; ilayer < nlayer; ilayer++) {
+        c->cd(ilayer + 1);
+        ((TH2D*)(*hdidhit_xy_layer)[ilayer])->GetXaxis()->SetRangeUser(-0.25, 0.25);
+        ((TH2D*)(*hdidhit_xy_layer)[ilayer])->GetYaxis()->SetRangeUser(-0.85, 0.85);
+        ((TH2D*)(*hdidhit_xy_layer)[ilayer])->SetTitle(Form("Layer %d: didhit", ilayer));
+        ((TH2D*)(*hdidhit_xy_layer)[ilayer])->Draw("COLZ");
+      }
+      c->Print(outpdfname);
+    
+    }
+
+    one_time_hist = 0;
+    
+    
     c->Clear();
     c->Divide(2,2);
 
@@ -985,14 +1034,16 @@ void Draw_Histograms() {
     // should hit xy on pad 3
     c->cd(3);
     //( (TH2D*)(*hshouldhit_xy_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_xy", ilayer));
-    ( (TH2D*)(*hshouldhit_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.4, 0.4);
+    //( (TH2D*)(*hshouldhit_xy_layer)[ilayer] )->GetYaxis()->SetRangeUser(-0.25, 0.25);
+    //( (TH2D*)(*hshouldhit_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.85, 0.85);
     ( (TH2D*)(*hshouldhit_xy_layer)[ilayer] )->Draw("COLZ");
 
     
     // should hit xy on pad 3
     c->cd(4);
     //( (TH2D*)(*hdidhit_xy_layer)[ilayer] )->SetTitle(Form("Layer_%d_didhit_xy", ilayer));
-    ( (TH2D*)(*hdidhit_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.4, 0.4);
+    ( (TH2D*)(*hdidhit_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.25, 0.25);
+    ( (TH2D*)(*hdidhit_xy_layer)[ilayer] )->GetYaxis()->SetRangeUser(-0.85, 0.85);
     ( (TH2D*)(*hdidhit_xy_layer)[ilayer] )->Draw("COLZ");
 
     c->Print(outpdfname);
@@ -1001,25 +1052,40 @@ void Draw_Histograms() {
     c->Divide(2,2);
     
     c->cd(1);
-    // ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->SetLineColor(kRed);
+    ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->SetLineColor(kRed);
 
-    //    ( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
+    //( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
     ( (TH1D*)(*hefficiency_x_layer)[ilayer] )->Draw("HIST");
 
     c->cd(2);
     //( (TH1D*)(*hefficiency_y_layer)[ilayer] )->SetLineColor(kRed);
 
     //    ( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
-    ( (TH1D*)(*hefficiency_y_layer)[ilayer] )->Draw("HIST");
-
+    ( (TH1D*)(*hefficiency_y_layer)[ilayer] )->Draw("HIST"); 
+      
     c->cd(3);
-    ( (TH2D*)(*hefficiency_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.4, 0.4);
+    ( (TH2D*)(*hefficiency_xy_layer)[ilayer] )->GetXaxis()->SetRangeUser(-0.25, 0.25);
+    ( (TH2D*)(*hefficiency_xy_layer)[ilayer] )->GetYaxis()->SetRangeUser(-0.85, 0.85);
 
     //    ( (TH1D*)(*hshouldhit_y_layer)[ilayer] )->SetTitle(Form("Layer_%d_shouldhit_didhit_y", ilayer));
     //gStyle->SetPalette(kDarkBodyRadiator);
     ( (TH2D*)(*hefficiency_xy_layer)[ilayer] )->Draw("COLZ");
 
+    c->cd(4);
+    TLatex latex;
+    latex.SetNDC();
+    latex.SetTextSize(0.05);
+    latex.DrawLatex(.4, .6, Form("Layer: %.1d", ilayer));
+    latex.DrawLatex(.2, .5, Form("Elastic Efficiency = %.1f %%", layer_elastic_efficiency[ilayer]));
+    
+    c->Update();
     c->Print(outpdfname);
+
+  //   std::cout << "Layer " << ilayer
+  //         << " eff_x entries = " << ((TH1D*)(*hefficiency_x_layer)[ilayer])->GetEntries() << "\n"
+  //         << " eff_y entries = " << ((TH1D*)(*hefficiency_y_layer)[ilayer])->GetEntries() << "\n"
+  //         << " eff_xy entries = " << ((TH2D*)(*hefficiency_xy_layer)[ilayer])->GetEntries() << std::endl;
+
   }
 
   c->Print(outpdfname + "]"); 
